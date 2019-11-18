@@ -27,6 +27,9 @@
 
 #define APP_PLATFORM_Y_ALIGN_SIZE  16
 
+#ifndef ALIGN
+#define  ALIGN(X,N) ( ((X) + (N - 1)) & (~((N) - 1)) )
+#endif
 
 //------------------------------------------------------------------------------
 //
@@ -56,6 +59,8 @@ typedef struct
 	int32_t 		dstDmaBufNum;
 	uint32_t 		srcWidth;
 	uint32_t 		srcHeight;
+	uint32_t 		dstWidth;
+	uint32_t 		dstHeight;
 	int32_t			dstOutBufNum;
 } NX_GL_Rotate_HANDLE;
 
@@ -74,7 +79,7 @@ static int32_t FindSrcDmaFdIndex(NX_GL_Rotate_HANDLE *pRotateHANDLE, int32_t src
 	return -1;
 }
 
-void *NX_GlRotateInit(uint32_t srcWidth, uint32_t srcHeight, int32_t (*pDstDmaFd)[3], int32_t srcImageFormat, int32_t dstOutBufNum)
+void *NX_GlRotateInit(uint32_t srcWidth, uint32_t srcHeight, uint32_t dstWidth, uint32_t dstHeight, int32_t (*pDstDmaFd)[3], int32_t srcImageFormat, int32_t dstOutBufNum)
 {
 	NX_GSURF_VMEM_IMAGE_FORMAT_MODE glSrcFormat = NX_GSURF_VMEM_IMAGE_FORMAT_YUV420;
 	NX_GSURF_VMEM_IMAGE_FORMAT_MODE glDstFormat = NX_GSURF_VMEM_IMAGE_FORMAT_YUV420;
@@ -106,21 +111,24 @@ void *NX_GlRotateInit(uint32_t srcWidth, uint32_t srcHeight, int32_t (*pDstDmaFd
 
 	pRotate_HANDLE->dstOutBufNum = dstOutBufNum;
 
-	pRotate_HANDLE->srcWidth  = srcWidth;
-	pRotate_HANDLE->srcHeight = srcHeight;
+	pRotate_HANDLE->srcWidth  = ALIGN(srcWidth,32);
+	pRotate_HANDLE->srcHeight = ALIGN(srcHeight,16);
+	pRotate_HANDLE->dstWidth  = ALIGN(dstWidth,32);
+	pRotate_HANDLE->dstHeight = ALIGN(dstHeight,16);
 
 	//create GSurf handle
 	pRotate_HANDLE->ghAppGSurfCtrl = nxGSurfaceCreate(dstOutBufNum, NX_FALSE,
-						0, 0, 0, 0, NX_FALSE);
+						0, 0, 0, 0, 0, NX_FALSE);
 
 	nxGSurfaceSetDoneCallback(pRotate_HANDLE->ghAppGSurfCtrl, NULL); /* not used  at pixmap */
 
 	//init GSurf EGL
-	nxGSurfaceInitEGL(pRotate_HANDLE->ghAppGSurfCtrl, NULL, glSrcFormat, APP_PLATFORM_Y_ALIGN_SIZE,  glDstFormat, APP_PLATFORM_Y_ALIGN_SIZE);	
+	nxGSurfaceInitEGL(pRotate_HANDLE->ghAppGSurfCtrl, NULL, glSrcFormat, APP_PLATFORM_Y_ALIGN_SIZE,  glDstFormat, APP_PLATFORM_Y_ALIGN_SIZE);
 
 	//create target
-	unsigned int gRenderWidth = pRotate_HANDLE->srcWidth;
-	unsigned int gRenderHeight = pRotate_HANDLE->srcHeight;
+	unsigned int gRenderWidth = pRotate_HANDLE->dstWidth;
+	unsigned int gRenderHeight = pRotate_HANDLE->dstHeight;
+
 	for (int i = 0 ; i < dstOutBufNum ; i++)
 	{
 		//create GSurf target handle
@@ -197,9 +205,9 @@ int32_t NX_GlRotateRun(void *pHandle, int32_t* pSrcDmaFd, int32_t *pDstDmaFd, in
 
 	hsource = pRotateHANDLE->ghAppGSurfSource[index];
 
-	uint32_t gRenderWidth = pRotateHANDLE->srcWidth;
-	uint32_t gRenderHeight = pRotateHANDLE->srcHeight;
-	nxGSurfaceRender(pRotateHANDLE->ghAppGSurfCtrl, hsource, htarget, 
+	uint32_t gRenderWidth = pRotateHANDLE->dstWidth;
+	uint32_t gRenderHeight = pRotateHANDLE->dstHeight;
+	nxGSurfaceRender(pRotateHANDLE->ghAppGSurfCtrl, hsource, htarget,
 					0, 0, gRenderWidth, gRenderHeight, (NX_GSURF_ROTATE_MODE)rotateMode);
 
 	nxGSurfaceUpdate(pRotateHANDLE->ghAppGSurfCtrl);

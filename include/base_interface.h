@@ -234,7 +234,7 @@ typedef enum
 #endif
 #endif
 
-#if defined( linux ) && !defined( ANDROID ) 
+#if defined( linux ) && !defined( ANDROID )
 /* destination drm display device */
 #define NX_PLATFORM_DST_DRM_DISP_USE
 #endif
@@ -244,7 +244,6 @@ typedef enum
 #include <gbm.h>
 #include <drm/drm_fourcc.h>
 #include <nx_video_alloc.h>
-//#include <nexell_drmif.h>
 #elif defined( NX_PLATFORM_DRM_USER_ALLOC_USE )
 typedef struct tagNxDrmVmem
 {
@@ -258,9 +257,8 @@ typedef struct tagNxDrmVmem
 #include <fcntl.h>
 #include <gbm.h>
 #include <drm/drm_fourcc.h>
-//#include <nexell_drmif.h>
 #define DRM_DEVICE_NAME "/dev/dri/card0"
-typedef NxDrmVmem* NX_MEMORY_HANDLE;
+typedef NxDrmVmem* NX_MEMORY_HANDLE_INTERNAL;
 
 #elif defined( NX_PLATFORM_ION_ALLOC_USE )
 

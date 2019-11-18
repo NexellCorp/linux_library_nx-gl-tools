@@ -45,11 +45,11 @@
 	   User process can start with callback argument. (NXRenderInfo)
 
 [Format performance]
-	1. src NX_GSURF_VMEM_IMAGE_FORMAT_YUV420 (This source format is the best.)
-	2. dst NX_GSURF_VMEM_IMAGE_FORMAT_YUV422 (One rendering. This destination format is the best.)
-	3. dst NX_GSURF_VMEM_IMAGE_FORMAT_NV21, NX_GSURF_VMEM_IMAGE_FORMAT_NV12 (Two rendering)
-	4. dst NX_GSURF_VMEM_IMAGE_FORMAT_YUV420 (Three rendering)
-	5. src NX_GSURF_VMEM_IMAGE_FORMAT_RGBA (too much arithmetic operation)
+	1. src YUV420, dst YUV422       (One rendering, The fastest)
+	2. src RGBA,   dst RGBA         (One rendering)
+	3. src YUV420, dst YUV420       (Three rendering)
+	   src YUV420, dst NV21 or NV12 (Two rendering, Time is alomot the same with the YUV420)
+	4. src RGBA,   dst YUV420       (Three rendering, and too much arithmetic operation, The slowest)
 
 [Source 4Channel camera memory shape]
 	|--------------stride-----------|
@@ -114,7 +114,7 @@ typedef enum
 //    VMEM Format
 //---------------------------------------------------------
 typedef enum{
-	NX_GSURF_VMEM_IMAGE_FORMAT_RGBA,   	 /* target: display, 			source: mem */
+	NX_GSURF_VMEM_IMAGE_FORMAT_RGBA,   	 /* target: display, mem, 			source: mem */
 	/* NX_GSURF_VMEM_IMAGE_FORMAT_YUV420 support 'seperated fd' and 'non-seperated fd' both. */
 	NX_GSURF_VMEM_IMAGE_FORMAT_YUV420, 	 /* target: mem, 				source: mem, 4camera */
 	NX_GSURF_VMEM_IMAGE_FORMAT_YUV422, 	 /* target: display, mem, 		source not supported */
@@ -153,7 +153,7 @@ typedef struct tagNXRenderInfo
 {
     int cam_idx; //used source camera buffer index
     int do_display;
-    HGSURFTARGET hsource; //used user hsource (source camera mode => NULL)
+    HGSURFSOURCE hsource; //used user hsource (source camera mode => NULL)
     HGSURFTARGET htarget; //used user htarget (destination display mode => NULL)
 } NXRenderInfo;
 
@@ -177,7 +177,7 @@ extern "C" {
 // camera_en : Source can be 4 channel camera.
 //
 NX_APICALL HGSURFCTRL nxGSurfaceCreate(unsigned int target_queue_cnt, NX_BOOL display_en,
-	unsigned int cam_stride, unsigned int cam_width, unsigned int cam_height, unsigned int cam_cnt, NX_BOOL camera_en);
+	unsigned int cam_stride, unsigned int cam_width, unsigned int cam_height, unsigned int cam_cnt, unsigned int cam_module, NX_BOOL camera_en);
 //
 //
 //
@@ -242,6 +242,10 @@ NX_APICALL void nxGSurfaceDestroySource(HGSURFCTRL hgsurf_ctrl, HGSURFSOURCE hso
 //
 NX_APICALL HGSURFTARGET nxGSurfaceCreateTarget(HGSURFCTRL hgsurf_ctrl, unsigned int dst_width, unsigned int dst_height, int dst_dma_fd);
 //
+// This is used with nxGSurfaceRenderAll4ChToEachImages().
+//
+NX_APICALL HGSURFTARGET nxGSurfaceCreateTargetEglImages(HGSURFCTRL hgsurf_ctrl, unsigned int dst_width, unsigned int dst_height, int* dst_dma_fds);
+//
 //
 //
 NX_APICALL HGSURFTARGET nxGSurfaceCreateTargetWithFDs(HGSURFCTRL hgsurf_ctrl, unsigned int dst_width, unsigned int dst_height, int* pdst_dma_fd);
@@ -250,15 +254,32 @@ NX_APICALL HGSURFTARGET nxGSurfaceCreateTargetWithFDs(HGSURFCTRL hgsurf_ctrl, un
 //
 NX_APICALL void nxGSurfaceDestroyTarget(HGSURFCTRL hgsurf_ctrl, HGSURFTARGET htarget);
 //
+// This is used with nxGSurfaceRenderAll4ChToEachImages().
+//
+NX_APICALL void nxGSurfaceDestroyTargetEglImages(HGSURFCTRL hgsurf_ctrl, HGSURFTARGET htarget);
+//
 // texture is memory
+// all target format : 30fps
 //
 NX_APICALL NX_BOOL nxGSurfaceRender(HGSURFCTRL hgsurf_ctrl, HGSURFSOURCE hsource, HGSURFTARGET htarget,
 			int x, int y, int width, int height, NX_GSURF_ROTATE_MODE rotate_mode);
 //
-// texture is 4 camera
+// texture is one of 4ch cameras, ch_mode < NX_GSURF_DIRECTION_MAX (ch0 or 1 or 2 or 3 => one image)
+// all target format         : 30fps
+// textures are all 4ch cameras, ch_mode = NX_GSURF_DIRECTION_MAX (all ch0,1,2,3 => one quad image)
+// target YUV422, RGBA       : 30fps
+// target YUV420 			 : 26.27fps
+// target NV21, NV12         : 26.03fps
 //
 NX_APICALL NX_BOOL nxGSurfaceRender4ch(HGSURFCTRL hgsurf_ctrl, HGSURFTARGET htarget,
-			int x, int y, int width, int height, NX_GSURF_DIRECTION_MODE dir_mode, NX_BOOL hflip, NX_BOOL vflip);
+			int x, int y, int width, int height, NX_GSURF_DIRECTION_MODE ch_mode, NX_BOOL hflip, NX_BOOL vflip);
+//
+// This is used with nxGSurfaceCreateTargetEglImages() and nxGSurfaceDestroyTargetEglImages().
+// textures are all 4ch cameras.
+// target YUV420 only : 30fps
+//
+NX_APICALL NX_BOOL nxGSurfaceRenderAll4ChToEachImages(HGSURFCTRL hgsurf_ctrl, HGSURFTARGET htarget,
+			int x, int y, int width, int height, NX_BOOL hflip, NX_BOOL vflip);
 //
 //
 //
@@ -279,7 +300,7 @@ NX_APICALL void nxGSurfaceMakeCurrent(HGSURFCTRL hgsurf_ctrl, EGLSurface surface
 //
 //
 //
-NX_APICALL EGLSurface nxGSurfaceGetSurface(HGSURFTARGET htarget, unsigned int plane);
+NX_APICALL EGLSurface nxGSurfaceGetSurface(HGSURFTARGET htarget, unsigned int chidx, unsigned int plane);
 //
 //
 //

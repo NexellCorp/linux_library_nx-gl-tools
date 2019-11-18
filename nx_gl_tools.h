@@ -49,7 +49,7 @@ enum
 extern "C" {
 #endif
 
-void *NX_GlRotateInit(uint32_t srcWidth, uint32_t srcHeight, int32_t (*pDstDmaFd)[3], int32_t srcImageFormat, int32_t dstOutBufNum);
+void *NX_GlRotateInit(uint32_t srcWidth, uint32_t srcHeight, uint32_t dstWidth, uint32_t dstHeight, int32_t (*pDstDmaFd)[3], int32_t srcImageFormat, int32_t dstOutBufNum);
 int32_t NX_GlRotateRun(void *pHandle, int32_t* pSrcDmaFd, int32_t *pDstDmaFd, int32_t rotateMode);
 void NX_GlRotateDeInit(void *pHandle);
 
