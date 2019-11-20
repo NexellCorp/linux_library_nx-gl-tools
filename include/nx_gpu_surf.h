@@ -183,8 +183,11 @@ NX_APICALL HGSURFCTRL nxGSurfaceCreate(unsigned int target_queue_cnt, NX_BOOL di
 //
 NX_APICALL void  nxGSurfaceDestroy(HGSURFCTRL hgsurf_ctrl);
 //
-// source_height_align : Source hieght might needs extra align offset.
-// target_height_align : Target hieght might needs extra align offset.
+// source_width_align : Source width might needs extra align offset(32X).
+// source_height_align : Source height might needs extra align offset(16X).
+// target_width_align : Target width might needs extra align offset(32X).
+// target_height_align : Target height might needs extra align offset(16X).
+//
 // 1280 x 800 YUV420 => height_align can be 0. (height_align 16 is ok also)
 //  _______
 // |       |
@@ -195,7 +198,7 @@ NX_APICALL void  nxGSurfaceDestroy(HGSURFCTRL hgsurf_ctrl);
 // |   V   |
 // |_______|
 //
-// 1280 x 720 YUV420 => height_align should be 16.
+// 1280 x 720 YUV420 => height_align chould be 16X.
 //  _______
 // |       |
 // |   Y   |
@@ -206,9 +209,20 @@ NX_APICALL void  nxGSurfaceDestroy(HGSURFCTRL hgsurf_ctrl);
 // |   V   |
 // |_______|
 //
+//  720 * 1280 YUV420 => width_align chould be 32X.
+//
+// |       | |
+// |   Y   | |
+// |_______|_|
+// |   U   | |
+// |_______|_|
+// |   V   | |
+// |_______|_|
+//
+
 NX_APICALL NX_BOOL nxGSurfaceInitEGL(HGSURFCTRL hgsurf_ctrl, NXDisplayInfo* pdisp_info,
-		NX_GSURF_VMEM_IMAGE_FORMAT_MODE source_format, unsigned int source_height_align,
-		NX_GSURF_VMEM_IMAGE_FORMAT_MODE target_format, unsigned int target_height_align);
+		NX_GSURF_VMEM_IMAGE_FORMAT_MODE source_format, unsigned int source_width_align, unsigned int source_height_align,
+		NX_GSURF_VMEM_IMAGE_FORMAT_MODE target_format, unsigned int target_width_align, unsigned int target_height_align);
 //
 //
 //

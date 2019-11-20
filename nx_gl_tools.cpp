@@ -16,7 +16,7 @@
 //------------------------------------------------------------------------------
 //
 //    Includes
-//    
+//
 //------------------------------------------------------------------------------
 #include <stdarg.h>     // for va_start, va_list
 #include <math.h>
@@ -26,6 +26,7 @@
 #include "nx_gl_tools.h"
 
 #define APP_PLATFORM_Y_ALIGN_SIZE  16
+#define APP_PLATFORM_X_ALIGN_SIZE  32
 
 #ifndef ALIGN
 #define  ALIGN(X,N) ( ((X) + (N - 1)) & (~((N) - 1)) )
@@ -111,10 +112,11 @@ void *NX_GlRotateInit(uint32_t srcWidth, uint32_t srcHeight, uint32_t dstWidth, 
 
 	pRotate_HANDLE->dstOutBufNum = dstOutBufNum;
 
-	pRotate_HANDLE->srcWidth  = ALIGN(srcWidth,32);
-	pRotate_HANDLE->srcHeight = ALIGN(srcHeight,16);
-	pRotate_HANDLE->dstWidth  = ALIGN(dstWidth,32);
-	pRotate_HANDLE->dstHeight = ALIGN(dstHeight,16);
+	pRotate_HANDLE->srcWidth  = srcWidth;
+	pRotate_HANDLE->srcHeight = srcHeight;
+	pRotate_HANDLE->dstWidth  = dstWidth;
+	pRotate_HANDLE->dstHeight = dstHeight;
+
 
 	//create GSurf handle
 	pRotate_HANDLE->ghAppGSurfCtrl = nxGSurfaceCreate(dstOutBufNum, NX_FALSE,
@@ -123,7 +125,9 @@ void *NX_GlRotateInit(uint32_t srcWidth, uint32_t srcHeight, uint32_t dstWidth, 
 	nxGSurfaceSetDoneCallback(pRotate_HANDLE->ghAppGSurfCtrl, NULL); /* not used  at pixmap */
 
 	//init GSurf EGL
-	nxGSurfaceInitEGL(pRotate_HANDLE->ghAppGSurfCtrl, NULL, glSrcFormat, APP_PLATFORM_Y_ALIGN_SIZE,  glDstFormat, APP_PLATFORM_Y_ALIGN_SIZE);
+	nxGSurfaceInitEGL(pRotate_HANDLE->ghAppGSurfCtrl, NULL,
+	      glSrcFormat, APP_PLATFORM_X_ALIGN_SIZE, APP_PLATFORM_Y_ALIGN_SIZE,
+	      glDstFormat, APP_PLATFORM_X_ALIGN_SIZE, APP_PLATFORM_Y_ALIGN_SIZE);
 
 	//create target
 	unsigned int gRenderWidth = pRotate_HANDLE->dstWidth;
