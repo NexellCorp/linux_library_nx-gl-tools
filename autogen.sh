@@ -10,5 +10,5 @@ autoreconf --force --verbose --install || exit 1
 cd "$ORIGDIR" || exit $?
 
 if test -z "$NOCONFIGURE"; then
-    "$srcdir"/configure --host=arm AR_FLAGS="crU""$@"
+    "$srcdir"/configure AR_FLAGS="crU""$@"
 fi
